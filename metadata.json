@@ -1,6 +1,6 @@
 {
   "name": "Study Coven",
-  "description": "Witchy pixel art study & collaborative companion for besties with shared to-dos, whiteboard, spellbook notes, potion mini-games, calendar, voice memos, watch/reading lists, coloring generator, and Veo image-to-video animations.",
+  "description": "Witchy pixel art study and collaborative companion with shared to-dos, spellbook notes, download/export vault, potion brewing lab, study timers, and ambient soundscapes.",
   "requestFramePermissions": [
     "android.permission.RECORD_AUDIO"
   ],

@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -291,11 +292,39 @@ fun WitchyAffirmationCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Share Magic",
+                            text = "Share",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
                             fontFamily = FontFamily.Monospace
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = {
+                        viewModel.downloadAffirmation(context, affirmation)
+                        Toast.makeText(context, "Saved Oracle Card to Downloads!", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    color = colors.surfaceCardElevated,
+                    border = BorderStroke(1.dp, colors.borderHighlight),
+                    modifier = Modifier
+                        .height(36.dp)
+                        .testTag("download_affirmation_button")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = "Download Oracle Card",
+                            tint = colors.primaryAccent,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }

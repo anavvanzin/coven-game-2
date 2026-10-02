@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,11 +9,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +32,7 @@ fun SpellbookAndWhiteboardScreen(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCovenColors.current
+    val context = LocalContext.current
     val notes by viewModel.notes.collectAsState()
     var showAddNoteDialog by remember { mutableStateOf(false) }
 
@@ -87,6 +91,38 @@ fun SpellbookAndWhiteboardScreen(
                                 )
                             }
                         }
+
+                        // Export All (.md) button
+                        Surface(
+                            onClick = {
+                                viewModel.downloadAllNotes(context)
+                                Toast.makeText(context, "Exported Grimoire to Downloads!", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.surfaceCardElevated,
+                            border = BorderStroke(1.dp, colors.borderHighlight),
+                            modifier = Modifier.testTag("download_all_notes_button")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FileDownload,
+                                    contentDescription = "Export All",
+                                    tint = colors.primaryAccent,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Export (.md)",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.primaryAccent,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -104,7 +140,10 @@ fun SpellbookAndWhiteboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f, fill = false)
+                            ) {
                                 if (note.isPinned) {
                                     Icon(
                                         imageVector = Icons.Default.PushPin,
@@ -123,16 +162,35 @@ fun SpellbookAndWhiteboardScreen(
                                 )
                             }
 
-                            IconButton(
-                                onClick = { viewModel.deleteNote(note) },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Note",
-                                    tint = colors.textMuted,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.downloadSingleNote(context, note)
+                                        Toast.makeText(context, "Downloaded ${note.title}!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .testTag("download_note_button_${note.id}")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FileDownload,
+                                        contentDescription = "Download Parchment",
+                                        tint = colors.primaryAccent,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { viewModel.deleteNote(note) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Note",
+                                        tint = colors.textMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
 

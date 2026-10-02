@@ -1,16 +1,27 @@
 package com.example.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.CovenDatabase
 import com.example.data.model.*
 import com.example.data.repository.CovenRepository
 import com.example.ui.theme.CovenThemePalette
+import com.example.util.CovenDownloadManager
+import com.example.util.DownloadResult
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+data class DownloadRecord(
+    val id: Long = System.currentTimeMillis(),
+    val title: String,
+    val filename: String,
+    val typeEmoji: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
 
 enum class CovenNavTab(val label: String, val iconEmoji: String) {
     QUESTS("Quests", "📜"),
@@ -135,6 +146,147 @@ class CovenViewModel(application: Application) : AndroidViewModel(application) {
                 )
             )
             addXp(15)
+        }
+    }
+
+    // Download & Archive Vault
+    private val _downloadHistory = MutableStateFlow<List<DownloadRecord>>(emptyList())
+    val downloadHistory: StateFlow<List<DownloadRecord>> = _downloadHistory.asStateFlow()
+
+    private val _downloadNotification = MutableStateFlow<String?>(null)
+    val downloadNotification: StateFlow<String?> = _downloadNotification.asStateFlow()
+
+    fun clearDownloadNotification() {
+        _downloadNotification.value = null
+    }
+
+    private fun logDownload(title: String, filename: String, emoji: String) {
+        val record = DownloadRecord(title = title, filename = filename, typeEmoji = emoji)
+        _downloadHistory.value = listOf(record) + _downloadHistory.value.take(9)
+        _downloadNotification.value = "Downloaded '$filename' to Downloads/StudyCoven"
+    }
+
+    fun downloadSingleNote(context: Context, note: NoteDocEntity) {
+        val cleanTitle = note.title.replace(Regex("[^a-zA-Z0-9_]"), "_").take(24)
+        val filename = "Grimoire_${cleanTitle}.md"
+        val content = CovenDownloadManager.formatNoteAsMarkdown(note)
+        val res = CovenDownloadManager.downloadTextFile(context, filename, content, "text/markdown")
+        if (res.isSuccess) {
+            logDownload(note.title, filename, "📖")
+            addXp(15)
+        } else {
+            _downloadNotification.value = res.message
+        }
+    }
+
+    fun downloadAllNotes(context: Context) {
+        val currentNotes = notes.value
+        val filename = "StudyCoven_AllSpells_Archive.md"
+        val content = CovenDownloadManager.formatAllNotesAsMarkdown(currentNotes)
+        val res = CovenDownloadManager.downloadTextFile(context, filename, content, "text/markdown")
+        if (res.isSuccess) {
+            logDownload("All Grimoire Spells (${currentNotes.size})", filename, "📚")
+            addXp(30)
+        } else {
+            _downloadNotification.value = res.message
+        }
+    }
+
+    fun downloadQuests(context: Context) {
+        val currentTasks = tasks.value
+        val filename = "StudyCoven_QuestsLog.txt"
+        val content = CovenDownloadManager.formatTasksAsText(currentTasks, covenLevel.value, totalXp.value)
+        val res = CovenDownloadManager.downloadTextFile(context, filename, content, "text/plain")
+        if (res.isSuccess) {
+            logDownload("Quests & Syllabi Log (${currentTasks.size})", filename, "📜")
+            addXp(20)
+        } else {
+            _downloadNotification.value = res.message
+        }
+    }
+
+    fun downloadStudySummary(context: Context) {
+        val filename = "StudyCoven_StudyReport.md"
+        val content = CovenDownloadManager.formatStudySummaryMarkdown(
+            tasks = tasks.value,
+            notes = notes.value,
+            xp = totalXp.value,
+            level = covenLevel.value,
+            activeBuff = activeStudyBuff.value,
+            persona = activePersona.value
+        )
+        val res = CovenDownloadManager.downloadTextFile(context, filename, content, "text/markdown")
+        if (res.isSuccess) {
+            logDownload("Comprehensive Study Report", filename, "🔮")
+            addXp(25)
+        } else {
+            _downloadNotification.value = res.message
+        }
+    }
+
+    fun downloadFullBackup(context: Context) {
+        val filename = "StudyCoven_Backup_${System.currentTimeMillis()}.json"
+        val json = CovenDownloadManager.createBackupJson(
+            tasks = tasks.value,
+            notes = notes.value,
+            xp = totalXp.value,
+            level = covenLevel.value,
+            persona = activePersona.value
+        )
+        val res = CovenDownloadManager.downloadTextFile(context, filename, json, "application/json")
+        if (res.isSuccess) {
+            logDownload("Full Coven Offline Backup", filename, "📦")
+            addXp(40)
+        } else {
+            _downloadNotification.value = res.message
+        }
+    }
+
+    fun restoreFromBackup(jsonString: String, onResult: (Boolean, String) -> Unit) {
+        val parsedResult = CovenDownloadManager.parseBackupJson(jsonString)
+        parsedResult.fold(
+            onSuccess = { backup ->
+                viewModelScope.launch {
+                    try {
+                        if (backup.tasks.isNotEmpty()) {
+                            repository.addTasks(backup.tasks)
+                        }
+                        if (backup.notes.isNotEmpty()) {
+                            repository.addNotes(backup.notes)
+                        }
+                        if (backup.xp > 0) {
+                            addXp(backup.xp)
+                        }
+                        onResult(true, "Restored ${backup.tasks.size} quests & ${backup.notes.size} spells!")
+                    } catch (e: Exception) {
+                        onResult(false, "Restore failed: ${e.localizedMessage}")
+                    }
+                }
+            },
+            onFailure = { err ->
+                onResult(false, "Invalid backup: ${err.localizedMessage}")
+            }
+        )
+    }
+
+    fun downloadAffirmation(context: Context, affirmation: WitchyAffirmation) {
+        val filename = "StudyCoven_Affirmation_${affirmation.id}.txt"
+        val content = buildString {
+            appendLine("✨ DAILY WITCHY ORACLE AFFIRMATION ✨")
+            appendLine("Theme: ${affirmation.themeTitle}")
+            appendLine("\"${affirmation.quote}\"")
+            appendLine("— ${affirmation.authorOrOrigin}")
+            appendLine()
+            appendLine("Study Lore Tip: ${affirmation.loreTip}")
+            appendLine("Drawn by: ${activePersona.value.displayName}")
+            appendLine("Bestie Study Sanctum 🌙")
+        }
+        val res = CovenDownloadManager.downloadTextFile(context, filename, content, "text/plain")
+        if (res.isSuccess) {
+            logDownload("Oracle: ${affirmation.themeTitle}", filename, "✨")
+            addXp(15)
+        } else {
+            _downloadNotification.value = res.message
         }
     }
 

@@ -1,16 +1,21 @@
 package com.example.ui.screens
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +31,7 @@ fun StudyBreakScreen(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCovenColors.current
+    val context = LocalContext.current
     val activePersona by viewModel.activePersona.collectAsState()
     val pomodoroSeconds by viewModel.pomodoroSecondsRemaining.collectAsState()
     val isPomodoroRunning by viewModel.isPomodoroRunning.collectAsState()
@@ -206,6 +212,67 @@ fun StudyBreakScreen(
                                         isSelected = pomodoroSeconds == min * 60,
                                         onClick = { viewModel.resetPomodoro(min, label) },
                                         modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Download Session Study Report
+                item {
+                    PixelCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("session_report_card"),
+                        backgroundColor = colors.surfaceCard
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "📊 SESSION EXPORT",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.primaryAccent,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                                Text(
+                                    text = "Download study metrics, timer progress & potion buffs",
+                                    fontSize = 10.sp,
+                                    color = colors.textSecondary
+                                )
+                            }
+                            Surface(
+                                onClick = {
+                                    viewModel.downloadStudySummary(context)
+                                    Toast.makeText(context, "Saved Study Report to Downloads!", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = colors.surfaceCardElevated,
+                                border = BorderStroke(1.dp, colors.borderHighlight),
+                                modifier = Modifier.testTag("download_session_report_button")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FileDownload,
+                                        contentDescription = "Export Report",
+                                        tint = colors.primaryAccent,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Export (.md)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.primaryAccent,
+                                        fontFamily = FontFamily.Monospace
                                     )
                                 }
                             }

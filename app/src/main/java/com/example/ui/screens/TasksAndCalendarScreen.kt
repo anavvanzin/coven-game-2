@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,12 +11,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +36,7 @@ fun TasksAndCalendarScreen(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCovenColors.current
+    val context = LocalContext.current
     val tasks by viewModel.tasks.collectAsState()
     val activePersona by viewModel.activePersona.collectAsState()
     val level by viewModel.covenLevel.collectAsState()
@@ -133,6 +137,56 @@ fun TasksAndCalendarScreen(
                             onClick = { selectedFilter = filter },
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                }
+            }
+
+            // Quests Header & Download Action
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "📜 QUESTS (${filteredTasks.size})",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primaryAccent,
+                        fontFamily = FontFamily.Monospace
+                    )
+
+                    Surface(
+                        onClick = {
+                            viewModel.downloadQuests(context)
+                            Toast.makeText(context, "Saved Quests log to Downloads!", Toast.LENGTH_SHORT).show()
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = colors.surfaceCardElevated,
+                        border = BorderStroke(1.dp, colors.borderHighlight),
+                        modifier = Modifier.testTag("download_quests_log_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FileDownload,
+                                contentDescription = "Download Quests",
+                                tint = colors.primaryAccent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Export (.txt)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primaryAccent,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
                 }
             }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CovenPersona
+import com.example.ui.components.DownloadVaultDialog
 import com.example.ui.components.MiniSoundscapeBar
 import com.example.ui.components.PixelWitchAvatar
 import com.example.ui.theme.CovenThemePalette
@@ -34,12 +35,46 @@ fun MainCovenScreen(
     val activePersona by viewModel.activePersona.collectAsState()
     val activeStudyBuff by viewModel.activeStudyBuff.collectAsState()
     val currentPalette by viewModel.themePalette.collectAsState()
+    val downloadNotification by viewModel.downloadNotification.collectAsState()
 
     var showPersonaMenu by remember { mutableStateOf(false) }
+    var showDownloadVault by remember { mutableStateOf(false) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(downloadNotification) {
+        downloadNotification?.let { msg ->
+            snackbarHostState.showSnackbar(
+                message = msg,
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearDownloadNotification()
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = colors.background,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                snackbar = { data ->
+                    Snackbar(
+                        containerColor = colors.surfaceCardElevated,
+                        contentColor = colors.primaryAccent,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text(
+                            text = data.visuals.message,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            )
+        },
         topBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -83,11 +118,33 @@ fun MainCovenScreen(
                         }
                     }
 
-                    // Actions: Theme Switcher ('Deep Forest' vs 'Mystic Moon') & Persona Selector
+                    // Actions: Download Vault, Theme Switcher & Persona Selector
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        // Download Vault Button
+                        Surface(
+                            onClick = { showDownloadVault = true },
+                            shape = RoundedCornerShape(8.dp),
+                            color = colors.surfaceCardElevated,
+                            border = BorderStroke(1.dp, colors.borderHighlight),
+                            modifier = Modifier.testTag("download_vault_header_button")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "📥 Vault",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.primaryAccent,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+
                         // Theme Switcher Button
                         Surface(
                             onClick = { viewModel.toggleThemePalette() },
@@ -97,12 +154,12 @@ fun MainCovenScreen(
                             modifier = Modifier.testTag("theme_switcher_button")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (currentPalette == CovenThemePalette.DEEP_FOREST) "🌲 Forest" else "🌙 Moon",
-                                    fontSize = 10.sp,
+                                    text = if (currentPalette == CovenThemePalette.DEEP_FOREST) "🌲" else "🌙",
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = colors.primaryAccent,
                                     fontFamily = FontFamily.Monospace
@@ -228,5 +285,12 @@ fun MainCovenScreen(
                 CovenNavTab.FOCUS -> StudyBreakScreen(viewModel = viewModel)
             }
         }
+    }
+
+    if (showDownloadVault) {
+        DownloadVaultDialog(
+            viewModel = viewModel,
+            onDismiss = { showDownloadVault = false }
+        )
     }
 }
